@@ -83,11 +83,17 @@ main:
 	mul $a2, $a2, 4 #align addresses
 	add $a2, $a2, $gp #add base of gp
 	add $a0, $gp, $zero #loop counter
+	
+# COLIN: An Updated Fill Loop function that reduces the amount of instructions to simply load the screen from 21K to 12K 
 FillLoop:
 	beq $a0, $a2, Init
-	sw $a1, 0($a0) #store color
-	addiu $a0, $a0, 4 #increment counter
+	sw $a1, 0($a0)
+	sw $a1, 4($a0)
+	sw $a1, 8($a0)
+	sw $a1, 12($a0)
+	addiu $a0, $a0, 16
 	j FillLoop
+
 
 ######################################################
 # Initialize Variables
@@ -195,7 +201,7 @@ DrawBorder:
 	lw $a0, snakeHeadX #load x coordinate
 	lw $a1, snakeHeadY #load y coordinate
 	jal CoordinateToAddress #get screen coordinates
-	move $a0, $v0 #copy coordinates to $a0
+	 move $a0, $v0 #copy coordinates to $a0 # COLIN: Removed this line for optimization when drawing snake
 	lw $a1, snakeColor #store color into $a1
 	jal DrawPixel	#draw color at pixel
 	
