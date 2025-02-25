@@ -1,17 +1,17 @@
 ######################################################################
-# 			     SNAKE!!!!                               #
+#                           SNAKE!!!!                                #
 ######################################################################
 #           Programmed by Shane Shafferman and Eric Deas             #
 ######################################################################
-#	This program requires the Keyboard and Display MMIO          #
-#       and the Bitmap Display to be connected to MIPS.              #
-#								     #
-#       Bitmap Display Settings:                                     #
-#	Unit Width: 8						     #
-#	Unit Height: 8						     #
-#	Display Width: 512					     #
-#	Display Height: 512					     #
-#	Base Address for Display: 0x10008000 ($gp)		     #
+#   This program requires the Keyboard and Display MMIO              #
+#   and the Bitmap Display to be connected to MIPS.                  #
+#                                                                    #
+#   Bitmap Display Settings:                                         #
+#   Unit Width: 8                                                    #
+#   Unit Height: 8                                                   #
+#   Display Width: 512                                               #
+#   Display Height: 512                                              #
+#   Base Address for Display: 0x10008000 ($gp)                       #
 ######################################################################
 
 .data
@@ -41,6 +41,12 @@ scoreArrayPosition: .word 0
 #end game message
 lostMessage:	.asciiz "You have died.... Your score was: "
 replayMessage:	.asciiz "Would you like to replay?"
+
+########################################################################
+# ADDED LINES FOR PRINTING REAL-TIME SCORE:
+scoreLabel: .asciiz "Score: "
+newLine:    .asciiz "\n"
+########################################################################
 
 #Snake Information
 snakeHeadX: 	.word 31
@@ -517,11 +523,11 @@ IncreaseLengthLeft:
 	lw $t9, 0($t3)
 	sw $t9, tailDirection
 	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
+	#if the array will go out of bounds, start it back at 0
 	bne $t8, 396, StoreLocationLeft
 	li $t8, 0
 StoreLocationLeft:
-	sw $t8, locationInArray  
+	sw $t8, locationInArray
 DrawTailLeft:	
 	lw $a1, snakeColor
 	jal DrawPixel	
@@ -540,49 +546,30 @@ DrawTailLeft:
 MoveTailRight:
 	#get the screen coordinates of the next direction change
 	lw $t8, locationInArray
-	#get the base address of the coordinate array
 	la $t0, directionChangeAddressArray
-	#go to the correct index of array
 	add $t0, $t0, $t8
-	#get the data from the array
 	lw $t9, 0($t0)
-	#get current tail position
 	lw $a0, snakeTailX
 	lw $a1, snakeTailY
-	#if the length needs to be increased
-	#do not change coordinates
 	beq $s1, 1, IncreaseLengthRight
-	#change tail position
 	addiu $a0, $a0, 1
-	#store new tail position
 	sw $a0, snakeTailX
 	
 IncreaseLengthRight:
-	li $s1, 0 #set flag back to false
-	#get screen coordinates
+	li $s1, 0
 	jal CoordinateToAddress
-	#store coordinates in $a0
 	add $a0, $v0, $zero
-	#if the coordinates is a position change 
-	#continue drawing tail in same direction
 	bne $t9, $a0, DrawTailRight
-	#get the base address of the direction change array
 	la $t3, newDirectionChangeArray
-	#move to correct index in array
 	add $t3, $t3, $t8
-	#get data from array
 	lw $t9, 0($t3)
-	#store new direction
 	sw $t9, tailDirection
-	#increment position in array
 	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
 	bne $t8, 396, StoreLocationRight
 	li $t8, 0
 StoreLocationRight:
 	sw $t8, locationInArray  
 DrawTailRight:	
-
 	lw $a1, snakeColor
 	jal DrawPixel	
 	#erase behind the snake
@@ -634,7 +621,7 @@ CoordinateToAddress:
 	mul $v0, $v0, $a1	#multiply by y position
 	add $v0, $v0, $a0	#add the x position
 	mul $v0, $v0, 4		#multiply by 4
-	add $v0, $v0, $gp	#add global pointerfrom bitmap display
+	add $v0, $v0, $gp	#add global pointer from bitmap display
 	jr $ra			# return $v0
 
 ##################################################################
@@ -668,22 +655,18 @@ CheckDirection:
 	
 checkIsDownPressed:
 	beq $a1, 115, unacceptable #if down is pressed while moving up
-	#prevent snake from moving into itself
 	j acceptable
 
 checkIsUpPressed:
 	beq $a1, 119, unacceptable #if up is pressed while moving down
-	#prevent snake from moving into itself
 	j acceptable
 
 checkIsRightPressed:
 	beq $a1, 100, unacceptable #if right is pressed while moving left
-	#prevent snake from moving into itself
 	j acceptable
 	
 checkIsLeftPressed:
 	beq $a1, 97, unacceptable #if left is pressed while moving right
-	#prevent snake from moving into itself
 	j acceptable
 	
 acceptable:
@@ -696,37 +679,35 @@ acceptable:
 	j DirectionCheckFinished
 	
 storeUpDirection:
-	lw $t4, arrayPosition #get the array index
-	la $t2, directionChangeAddressArray #get the address for the coordinate for direction change
-	la $t3, newDirectionChangeArray #get address for new direction
-	add $t2, $t2, $t4 #add the index to the base
+	lw $t4, arrayPosition
+	la $t2, directionChangeAddressArray
+	la $t3, newDirectionChangeArray
+	add $t2, $t2, $t4
 	add $t3, $t3, $t4
 		
-	sw $a2, 0($t2) #store the coordinates in that index
+	sw $a2, 0($t2)
 	li $t5, 119
-	sw $t5, 0($t3) #store the direction in that index
+	sw $t5, 0($t3)
 	
-	addiu $t4, $t4, 4 #increment the array index
-	#if the array will go out of bounds, start it back at 0
+	addiu $t4, $t4, 4
 	bne $t4, 396, UpStop
 	li $t4, 0
 UpStop:
-	sw $t4, arrayPosition	
+	sw $t4, arrayPosition
 	j DirectionCheckFinished
 	
 storeDownDirection:
-	lw $t4, arrayPosition #get the array index
-	la $t2, directionChangeAddressArray #get the address for the coordinate for direction change
-	la $t3, newDirectionChangeArray #get address for new direction
-	add $t2, $t2, $t4 #add the index to the base
+	lw $t4, arrayPosition
+	la $t2, directionChangeAddressArray
+	la $t3, newDirectionChangeArray
+	add $t2, $t2, $t4
 	add $t3, $t3, $t4
 	
-	sw $a2, 0($t2) #store the coordinates in that index
+	sw $a2, 0($t2)
 	li $t5, 115
-	sw $t5, 0($t3) #store the direction in that index
+	sw $t5, 0($t3)
 
-	addiu $t4, $t4, 4 #increment the array index
-	#if the array will go out of bounds, start it back at 0
+	addiu $t4, $t4, 4
 	bne $t4, 396, DownStop
 	li $t4, 0
 
@@ -735,18 +716,17 @@ DownStop:
 	j DirectionCheckFinished
 
 storeLeftDirection:
-	lw $t4, arrayPosition #get the array index
-	la $t2, directionChangeAddressArray #get the address for the coordinate for direction change
-	la $t3, newDirectionChangeArray #get address for new direction
-	add $t2, $t2, $t4 #add the index to the base
+	lw $t4, arrayPosition
+	la $t2, directionChangeAddressArray
+	la $t3, newDirectionChangeArray
+	add $t2, $t2, $t4
 	add $t3, $t3, $t4
 
-	sw $a2, 0($t2) #store the coordinates in that index
+	sw $a2, 0($t2)
 	li $t5, 97
-	sw $t5, 0($t3) #store the direction in that index
+	sw $t5, 0($t3)
 
-	addiu $t4, $t4, 4 #increment the array index
-	#if the array will go out of bounds, start it back at 0
+	addiu $t4, $t4, 4
 	bne $t4, 396, LeftStop
 	li $t4, 0
 
@@ -755,28 +735,26 @@ LeftStop:
 	j DirectionCheckFinished
 
 storeRightDirection:
-	lw $t4, arrayPosition #get the array index
-	la $t2, directionChangeAddressArray #get the address for the coordinate for direction change
-	la $t3, newDirectionChangeArray #get address for new direction
-	add $t2, $t2, $t4 #add the index to the base
+	lw $t4, arrayPosition
+	la $t2, directionChangeAddressArray
+	la $t3, newDirectionChangeArray
+	add $t2, $t2, $t4
 	add $t3, $t3, $t4
 	
-	sw $a2, 0($t2) #store the coordinates in that index
+	sw $a2, 0($t2)
 	li $t5, 100
-	sw $t5, 0($t3) #store the direction in that index
+	sw $t5, 0($t3)
 
-	addiu $t4, $t4, 4 #increment the array index
-	#if the array will go out of bounds, start it back at 0
+	addiu $t4, $t4, 4
 	bne $t4, 396, RightStop
 	li $t4, 0
 
 RightStop:
-	#store array position
 	sw $t4, arrayPosition		
 	j DirectionCheckFinished
 	
 unacceptable:
-	li $v0, 0 #direction is not acceptable
+	li $v0, 0
 	j DirectionCheckFinished
 	
 Same:
@@ -822,6 +800,7 @@ XEqualFruit:
 	beq $a1, $t1, YEqualFruit
 	#if not eqaul end function
 	j ExitCollisionCheck
+
 YEqualFruit:
 	#update the score as fruit has been eaten
 	lw $t5, score
@@ -841,7 +820,24 @@ YEqualFruit:
 	li $a2, 7
 	li $a3, 127
 	syscall
-	
+
+	##################################################################
+	# ADDED SYSCALLS TO PRINT THE UPDATED SCORE:
+	##################################################################
+	li   $v0, 4          # syscall code 4: Print string
+	la   $a0, scoreLabel # address of "Score: " string
+	syscall
+
+	li   $v0, 1          # syscall code 1: Print integer
+	move $a0, $t5        # $t5 holds the updated score
+	syscall
+
+	# optional newline
+	li   $v0, 4
+	la   $a0, newLine
+	syscall
+	##################################################################
+
 	li $v0, 1 #set return value to 1 for collision
 	
 ExitCollisionCheck:
@@ -868,65 +864,50 @@ CheckGameEndingCollision:
 	beq  $a2, 115, CheckDown
 	beq  $a2, 97,  CheckLeft
 	beq  $a2, 100, CheckRight
-	j BodyCollisionDone #for error?
+	j BodyCollisionDone
 	
 CheckUp:
-	#look above the current position
 	addiu $a1, $a1, -1
 	jal CoordinateToAddress
-	#get color at screen address
 	lw $t1, 0($v0)
-	#add $s6, $t1, $zero
 	lw $t2, snakeColor
 	lw $t3, borderColor
-	beq $t1, $t2, Exit #If colors are equal - YOU LOST!
-	beq $t1, $t3, Exit #If you hit the border - YOU LOST!
-	j BodyCollisionDone # if not, leave function
+	beq $t1, $t2, Exit
+	beq $t1, $t3, Exit
+	j BodyCollisionDone
 
 CheckDown:
-
-	#look below the current position
 	addiu $a1, $a1, 1
 	jal CoordinateToAddress
-	#get color at screen address
 	lw $t1, 0($v0)
-	#add $s6, $t1, $zero
 	lw $t2, snakeColor
 	lw $t3, borderColor
-	beq $t1, $t2, Exit #If colors are equal - YOU LOST!
-	beq $t1, $t3, Exit #If you hit the border - YOU LOST!
-	j BodyCollisionDone # if not, leave function
+	beq $t1, $t2, Exit
+	beq $t1, $t3, Exit
+	j BodyCollisionDone
 
 CheckLeft:
-
-	#look to the left of the current position
 	addiu $a0, $a0, -1
 	jal CoordinateToAddress
-	#get color at screen address
 	lw $t1, 0($v0)
-	#add $s6, $t1, $zero
 	lw $t2, snakeColor
 	lw $t3, borderColor
-	beq $t1, $t2, Exit #If colors are equal - YOU LOST!
-	beq $t1, $t3, Exit #If you hit the border - YOU LOST!
-	j BodyCollisionDone # if not, leave function
+	beq $t1, $t2, Exit
+	beq $t1, $t3, Exit
+	j BodyCollisionDone
 
 CheckRight:
-
-	#look to the right of the current position
 	addiu $a0, $a0, 1
 	jal CoordinateToAddress
-	#get color at screen address
 	lw $t1, 0($v0)
-	#add $s6, $t1, $zero
 	lw $t2, snakeColor
 	lw $t3, borderColor
-	beq $t1, $t2, Exit #If colors are equal - YOU LOST!
-	beq $t1, $t3, Exit #If you hit the border - YOU LOST!
-	j BodyCollisionDone # if not, leave function
+	beq $t1, $t2, Exit
+	beq $t1, $t3, Exit
+	j BodyCollisionDone
 
 BodyCollisionDone:
-	lw $ra, 0($sp) #restore return address
+	lw $ra, 0($sp)
 	jr $ra		
 	
 ##################################################################
@@ -936,30 +917,21 @@ BodyCollisionDone:
 # no return values
 ##################################################################
 IncreaseDifficulty:
-	lw $t0, score #get the player's score
-	la $t1, scoreMilestones #get the milestones base address
-	lw $t2, scoreArrayPosition #get the array position
-	add $t1, $t1, $t2 #move to position in array
-	lw $t3, 0($t1) #get the value at the array index
+	lw $t0, score
+	la $t1, scoreMilestones
+	lw $t2, scoreArrayPosition
+	add $t1, $t1, $t2
+	lw $t3, 0($t1)
 	
-	#if the player score is not equal to the current milestone
-	#exit the function, if they are equal increase difficulty
 	bne $t3, $t0, FinishedDiff 
-	#increase the index for the milestones array
 	addiu $t2, $t2, 4
-	#store new position
 	sw $t2, scoreArrayPosition
-	#load the scoreGain variable to increase the
-	#points awarded for eating fruit
 	lw $t0, scoreGain
-	#multiply gain by 2
-	sll $t0, $t0, 1 
-	#load the game speed
+	sll $t0, $t0, 1
 	lw $t1, gameSpeed
-	#subtract 25 from the move speed
 	addiu $t1, $t1, -25
-	#store new speed
 	sw $t1, gameSpeed
+	sw $t0, scoreGain
 
 FinishedDiff:
 	jr $ra
@@ -986,15 +958,15 @@ Exit:
 	syscall
 	
 	li $v0, 56 #syscall value for dialog
-	la $a0, lostMessage #get message
-	lw $a1, score	#get score
+	la $a0, lostMessage
+	lw $a1, score
 	syscall
 	
 	li $v0, 50 #syscall for yes/no dialog
-	la $a0, replayMessage #get message
+	la $a0, replayMessage
 	syscall
 	
-	beqz $a0, main#jump back to start of program
+	beqz $a0, main #jump back to start of program
 	#end program
 	li $v0, 10
 	syscall
