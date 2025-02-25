@@ -36,7 +36,7 @@ fourthFruitColor:.word	0xffff00	 # yellow - does absolutely nothing, no score in
 score: 		.word 0
 #stores how many points are recieved for eating a fruit
 #increases as program gets harder
-scoreGain:	.word 50
+scoreGain:	.word 10
 #speed the snake moves at, increases as game progresses
 gameSpeed:	.word 200
 #array to store the scores in which difficulty should increase
