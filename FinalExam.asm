@@ -679,8 +679,17 @@ nowDrawFruit:
 	j InputCheck
 	
 AddLength:
+beq $s5, 1, noSpecialSizeEffect #continues the regular addLength label
+beq $s5, 2, noSpecialSizeEffect #red doesnt affect size so it has the same jump as orange
+beq $s5, 3, purpleEffect #WIP
+beq $s5, 4, yellowEffect #if the fruit was yellow skip adding size
+
+noSpecialSizeEffect:
 	li $s1, 1 #flag to increase snake length
-	
+
+purpleEffect:
+
+yellowEffect:
 	#changes fruit after each collision
 	#syscall for random int with a upper bound
 	li $v0, 42
@@ -897,6 +906,23 @@ XEqualFruit:
 	#if not eqaul end function
 	j ExitCollisionCheck
 YEqualFruit:
+
+beq $s5, 1, fruitOrange
+beq $s5, 2, fruitRed
+beq $s5, 3, fruitPurple
+beq $s5, 4, fruitYellow
+
+fruitPurple:
+	j fruitOrange
+
+fruitRed:
+	lw $t1, gameSpeed
+	#subtract 25 from the move speed
+	addiu $t1, $t1, -25
+	#store new speed
+	sw $t1, gameSpeed
+
+fruitOrange:	
 	#update the score as fruit has been eaten
 	lw $t5, score
 	lw $t6, scoreGain
@@ -915,11 +941,14 @@ YEqualFruit:
 	li $a2, 7
 	li $a3, 127
 	syscall
+
+fruitYellow:
+	j printScore	
 	
-	
-	##################################################################
-	# ADDED SYSCALLS TO PRINT THE UPDATED SCORE:
-	##################################################################
+##################################################################
+# ADDED SYSCALLS TO PRINT THE UPDATED SCORE:
+##################################################################
+printScore:
 	li   $v0, 4          # syscall code 4: Print string
 	la   $a0, scoreLabel # address of "Score: " string
 	syscall
@@ -932,7 +961,7 @@ YEqualFruit:
 	li   $v0, 4
 	la   $a0, newLine
 	syscall
-	##################################################################
+##################################################################
 	
 	li $v0, 1 #set return value to 1 for collision
 	
