@@ -943,6 +943,7 @@ fruitOrange:
 	syscall
 
 fruitYellow:
+	lw $t5, score
 	j printScore	
 	
 ##################################################################
