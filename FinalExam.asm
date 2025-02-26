@@ -413,201 +413,200 @@ DrawRightLoop:
 ######################################################
 # Update Snake Tail Position
 ######################################################	
-			
-UpdateTailPosition:	
+
+UpdateTailPosition:    
 	lw $t2, tailDirection
-	#branch based on which direction tail is moving
-	beq  $t2, 119, MoveTailUp
-	beq  $t2, 115, MoveTailDown
-	beq  $t2, 97, MoveTailLeft
-	beq  $t2, 100, MoveTailRight
+	# Branch based on which direction tail is moving
+    	beq  $t2, 119, MoveTailUp
+   	beq  $t2, 115, MoveTailDown
+    	beq  $t2, 97, MoveTailLeft
+    	beq  $t2, 100, MoveTailRight
 
 MoveTailUp:
-	#get the screen coordinates of the next direction change
-	lw $t8, locationInArray
-	la $t0, directionChangeAddressArray #get direction change coordinate
-	add $t0, $t0, $t8
-	lw $t9, 0($t0)
-	lw $a0, snakeTailX  #get snake tail position
-	lw $a1, snakeTailY
-	#if the index is out of bounds, set back to zero
-	beq $s1, 1, IncreaseLengthUp #branch if length should be increased
-	addiu $a1, $a1, -1 #change tail position if no length change
-	sw $a1, snakeTailY
-	
+    	# Get the screen coordinates of the next direction change
+    	lw $t8, locationInArray
+    	la $t0, directionChangeAddressArray # Get direction change coordinate
+    	add $t0, $t0, $t8
+    	lw $t9, 0($t0)
+    	lw $a0, snakeTailX  # Get snake tail position
+    	lw $a1, snakeTailY
+    	# Check if length should be increased
+    	bgtz $s1, IncreaseLengthUp # Branch if $s1 > 0
+    	addiu $a1, $a1, -1 # Change tail position if no length change
+    	sw $a1, snakeTailY
+    
 IncreaseLengthUp:
-	li $s1, 0 #set flag back to false
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	bne $t9, $a0, DrawTailUp #change direction if needed
-	la $t3, newDirectionChangeArray  #update direction
-	add $t3, $t3, $t8
-	lw $t9, 0($t3)
-	sw $t9, tailDirection
-	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
-	bne $t8, 396, StoreLocationUp
-	li $t8, 0
+    	addi $s1, $s1, -1 # Decrement the counter
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	bne $t9, $a0, DrawTailUp # Change direction if needed
+    	la $t3, newDirectionChangeArray  # Update direction
+    	add $t3, $t3, $t8
+    	lw $t9, 0($t3)
+    	sw $t9, tailDirection
+    	addiu $t8, $t8, 4
+    	# If the index is out of bounds, set back to zero
+    	bne $t8, 396, StoreLocationUp
+    	li $t8, 0
 StoreLocationUp:
-	sw $t8, locationInArray 
+    	sw $t8, locationInArray 
 DrawTailUp:
-	lw $a1, snakeColor
-	jal DrawPixel
-	#erase behind the snake
-	lw $t0, snakeTailX
-	lw $t1, snakeTailY
-	addiu $t1, $t1, 1
-	add $a0, $t0, $zero
-	add $a1, $t1, $zero
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	lw $a1, backgroundColor
-	jal DrawPixel	
-	j DrawFruit  #finished updating snake, update fruit
+    	lw $a1, snakeColor
+    	jal DrawPixel
+    	# Erase behind the snake
+    	lw $t0, snakeTailX
+    	lw $t1, snakeTailY
+    	addiu $t1, $t1, 1
+    	add $a0, $t0, $zero
+    	add $a1, $t1, $zero
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	lw $a1, backgroundColor
+    	jal DrawPixel    
+    	j DrawFruit  # Finished updating snake, update fruit
 
 MoveTailDown:
-	#get the screen coordinates of the next direction change
-	lw $t8, locationInArray
-	la $t0, directionChangeAddressArray #get direction change coordinate
-	add $t0, $t0, $t8
-	lw $t9, 0($t0)
-	lw $a0, snakeTailX  #get snake tail position
-	lw $a1, snakeTailY
-	beq $s1, 1, IncreaseLengthDown #branch if length should be increased
-	addiu $a1, $a1, 1 #change tail position if no length change
-	sw $a1, snakeTailY
-	
+    	# Get the screen coordinates of the next direction change
+    	lw $t8, locationInArray
+    	la $t0, directionChangeAddressArray # Get direction change coordinate
+    	add $t0, $t0, $t8
+    	lw $t9, 0($t0)
+    	lw $a0, snakeTailX  # Get snake tail position
+    	lw $a1, snakeTailY
+    	bgtz $s1, IncreaseLengthDown # Branch if $s1 > 0
+    	addiu $a1, $a1, 1 # Change tail position if no length change
+    	sw $a1, snakeTailY
+    
 IncreaseLengthDown:
-	li $s1, 0 #set flag back to false
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	bne $t9, $a0, DrawTailDown #change direction if needed
-	la $t3, newDirectionChangeArray  #update direction
-	add $t3, $t3, $t8
-	lw $t9, 0($t3)
-	sw $t9, tailDirection
-	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
-	bne $t8, 396, StoreLocationDown
-	li $t8, 0
+    	addi $s1, $s1, -1 # Decrement the counter
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	bne $t9, $a0, DrawTailDown # Change direction if needed
+    	la $t3, newDirectionChangeArray  # Update direction
+    	add $t3, $t3, $t8
+    	lw $t9, 0($t3)
+    	sw $t9, tailDirection
+    	addiu $t8, $t8, 4
+    	# If the index is out of bounds, set back to zero
+    	bne $t8, 396, StoreLocationDown
+    	li $t8, 0
 StoreLocationDown:
-	sw $t8, locationInArray  
-DrawTailDown:	
-	lw $a1, snakeColor
-	jal DrawPixel	
-	#erase behind the snake
-	lw $t0, snakeTailX
-	lw $t1, snakeTailY
-	addiu $t1, $t1, -1
-	add $a0, $t0, $zero
-	add $a1, $t1, $zero
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	lw $a1, backgroundColor
-	jal DrawPixel	
-	j DrawFruit #finished updating snake, update fruit
+    	sw $t8, locationInArray  
+DrawTailDown:    
+    	lw $a1, snakeColor
+    	jal DrawPixel    
+    	# Erase behind the snake
+    	lw $t0, snakeTailX
+    	lw $t1, snakeTailY
+    	addiu $t1, $t1, -1
+    	add $a0, $t0, $zero
+    	add $a1, $t1, $zero
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	lw $a1, backgroundColor
+    	jal DrawPixel    
+    	j DrawFruit # Finished updating snake, update fruit
 
 MoveTailLeft:
-	#update the tail position when moving left
-	lw $t8, locationInArray
-	la $t0, directionChangeAddressArray #get direction change coordinate
-	add $t0, $t0, $t8
-	lw $t9, 0($t0)
-	lw $a0, snakeTailX #get snake tail position
-	lw $a1, snakeTailY
-	beq $s1, 1, IncreaseLengthLeft #branch if length should be increased
-	addiu $a0, $a0, -1 #change tail position if no length change
-	sw $a0, snakeTailX
-	
+    	# Update the tail position when moving left
+    	lw $t8, locationInArray
+    	la $t0, directionChangeAddressArray # Get direction change coordinate
+    	add $t0, $t0, $t8
+    	lw $t9, 0($t0)
+    	lw $a0, snakeTailX # Get snake tail position
+    	lw $a1, snakeTailY
+    	bgtz $s1, IncreaseLengthLeft # Branch if $s1 > 0
+    	addiu $a0, $a0, -1 # Change tail position if no length change
+    	sw $a0, snakeTailX
+    
 IncreaseLengthLeft:
-	li $s1, 0 #set flag back to false
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	bne $t9, $a0, DrawTailLeft #change direction if needed
-	la $t3, newDirectionChangeArray #update direction
-	add $t3, $t3, $t8
-	lw $t9, 0($t3)
-	sw $t9, tailDirection
-	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
-	bne $t8, 396, StoreLocationLeft
-	li $t8, 0
+    	addi $s1, $s1, -1 # Decrement the counter
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	bne $t9, $a0, DrawTailLeft # Change direction if needed
+    	la $t3, newDirectionChangeArray # Update direction
+    	add $t3, $t3, $t8
+    	lw $t9, 0($t3)
+    	sw $t9, tailDirection
+    	addiu $t8, $t8, 4
+    	# If the index is out of bounds, set back to zero
+    	bne $t8, 396, StoreLocationLeft
+    	li $t8, 0
 StoreLocationLeft:
-	sw $t8, locationInArray  
-DrawTailLeft:	
-	lw $a1, snakeColor
-	jal DrawPixel	
-	#erase behind the snake
-	lw $t0, snakeTailX
-	lw $t1, snakeTailY
-	addiu $t0, $t0, 1
-	add $a0, $t0, $zero
-	add $a1, $t1, $zero
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	lw $a1, backgroundColor
-	jal DrawPixel	
-	j DrawFruit  #finished updating snake, update fruit
+    	sw $t8, locationInArray  
+DrawTailLeft:    
+    	lw $a1, snakeColor
+    	jal DrawPixel    
+    	# Erase behind the snake
+    	lw $t0, snakeTailX
+    	lw $t1, snakeTailY
+    	addiu $t0, $t0, 1
+    	add $a0, $t0, $zero
+    	add $a1, $t1, $zero
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	lw $a1, backgroundColor
+    	jal DrawPixel    
+    	j DrawFruit  # Finished updating snake, update fruit
 
 MoveTailRight:
-	#get the screen coordinates of the next direction change
-	lw $t8, locationInArray
-	#get the base address of the coordinate array
-	la $t0, directionChangeAddressArray
-	#go to the correct index of array
-	add $t0, $t0, $t8
-	#get the data from the array
-	lw $t9, 0($t0)
-	#get current tail position
-	lw $a0, snakeTailX
-	lw $a1, snakeTailY
-	#if the length needs to be increased
-	#do not change coordinates
-	beq $s1, 1, IncreaseLengthRight
-	#change tail position
-	addiu $a0, $a0, 1
-	#store new tail position
-	sw $a0, snakeTailX
-	
+    	# Get the screen coordinates of the next direction change
+    	lw $t8, locationInArray
+    	# Get the base address of the coordinate array
+    	la $t0, directionChangeAddressArray
+    	# Go to the correct index of array
+    	add $t0, $t0, $t8
+    	# Get the data from the array
+    	lw $t9, 0($t0)
+    	# Get current tail position
+    	lw $a0, snakeTailX
+    	lw $a1, snakeTailY
+    	# If the length needs to be increased
+    	bgtz $s1, IncreaseLengthRight # Branch if $s1 > 0
+    	# Change tail position
+    	addiu $a0, $a0, 1
+    	# Store new tail position
+    	sw $a0, snakeTailX
+    
 IncreaseLengthRight:
-	li $s1, 0 #set flag back to false
-	#get screen coordinates
-	jal CoordinateToAddress
-	#store coordinates in $a0
-	add $a0, $v0, $zero
-	#if the coordinates is a position change 
-	#continue drawing tail in same direction
-	bne $t9, $a0, DrawTailRight
-	#get the base address of the direction change array
-	la $t3, newDirectionChangeArray
-	#move to correct index in array
-	add $t3, $t3, $t8
-	#get data from array
-	lw $t9, 0($t3)
-	#store new direction
-	sw $t9, tailDirection
-	#increment position in array
-	addiu $t8,$t8,4
-	#if the index is out of bounds, set back to zero
-	bne $t8, 396, StoreLocationRight
-	li $t8, 0
+    	addi $s1, $s1, -1 # Decrement the counter
+    	# Get screen coordinates
+    	jal CoordinateToAddress
+    	# Store coordinates in $a0
+    	add $a0, $v0, $zero
+    	# If the coordinates is a position change 
+    	# Continue drawing tail in same direction
+    	bne $t9, $a0, DrawTailRight
+    	# Get the base address of the direction change array
+    	la $t3, newDirectionChangeArray
+    	# Move to correct index in array
+    	add $t3, $t3, $t8
+    	# Get data from array
+    	lw $t9, 0($t3)
+    	# Store new direction
+    	sw $t9, tailDirection
+    	# Increment position in array
+    	addiu $t8, $t8, 4
+    	# If the index is out of bounds, set back to zero
+    	bne $t8, 396, StoreLocationRight
+    	li $t8, 0
 StoreLocationRight:
-	sw $t8, locationInArray  
-DrawTailRight:	
+    	sw $t8, locationInArray  
+DrawTailRight:    
+    	lw $a1, snakeColor
+    	jal DrawPixel    
+    	# Erase behind the snake
+    	lw $t0, snakeTailX
+    	lw $t1, snakeTailY
+    	addiu $t0, $t0, -1
+    	add $a0, $t0, $zero
+    	add $a1, $t1, $zero
+    	jal CoordinateToAddress
+    	add $a0, $v0, $zero
+    	lw $a1, backgroundColor
+    	jal DrawPixel
+    	j DrawFruit  # Finished updating snake, update fruit			
 
-	lw $a1, snakeColor
-	jal DrawPixel	
-	#erase behind the snake
-	lw $t0, snakeTailX
-	lw $t1, snakeTailY
-	addiu $t0, $t0, -1
-	add $a0, $t0, $zero
-	add $a1, $t1, $zero
-	jal CoordinateToAddress
-	add $a0, $v0, $zero
-	lw $a1, backgroundColor
-	jal DrawPixel
-	j DrawFruit  #finished updating snake, update fruit
 	
 ######################################################
 # Draw Fruit
@@ -692,16 +691,22 @@ nowDrawFruit:
 AddLength:
 beq $s5, 1, noSpecialSizeEffect #continues the regular addLength label
 beq $s5, 2, noSpecialSizeEffect #red doesnt affect size so it has the same jump as orange
-beq $s5, 3, purpleEffect #WIP
+beq $s5, 3, purpleEffect #increases length by 10 instead of 1
 beq $s5, 4, yellowEffect #if the fruit was yellow skip adding size
 beq $s5, 5, noSpecialSizeEffect #pink doesnt affect size so it has the same jump as orange
 
 noSpecialSizeEffect:
 	li $s1, 1 #flag to increase snake length
+	j contAddLength
 
 purpleEffect:
-
+	li $s1, 10 #flag to increase length by 10, instead of 1
+	j contAddLength
+	
 yellowEffect:
+	j contAddLength
+
+contAddLength:
 	#changes fruit after each collision
 	#syscall for random int with a upper bound
 	li $v0, 42
