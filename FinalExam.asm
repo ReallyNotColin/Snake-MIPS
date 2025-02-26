@@ -27,10 +27,11 @@ snakeColor: 	 .word	0x0066cc	 # blue
 backgroundColor: .word	0x000000	 # black
 borderColor:     .word	0x00ff00	 # green	
 firstFruitColor: .word	0xcc6611	 # orange - base fruit, nothing special
-secondFruitColor:.word	0xff0000	 # red - increases snakes speed
+secondFruitColor:.word	0xff0000	 # red - increases snakes speed, speed will not increase beyond 50
 thirdFruitColor: .word	0x800080	 # purple - adds 10 size 
 fourthFruitColor:.word	0xffff00	 # yellow - does absolutely nothing, no score increase
 					 # no size increase, just a fruit that is meant to waste time
+fifthFruitColor: .word 	0xe4bbf1	 # pink - slows the snake down, will not decrease speed below 200
 
 #score variable
 score: 		.word 0
@@ -623,8 +624,8 @@ DrawFruit:
 pickFirstFruit:
 	#syscall for random int with a upper bound
 	li $v0, 42
-	#upper bound 3 (0 <= $a0 < $a1)
-	li $a1, 4
+	#upper bound 4 (0 <= $a0 < $a1)
+	li $a1, 5
 	syscall
 
 	addiu $a0, $a0, 1
@@ -636,6 +637,7 @@ fruitCheck:
 	beq $s5, 2, isSecondFruit
 	beq $s5, 3, isThirdFruit
 	beq $s5, 4, isFourthFruit
+	beq $s5, 5, isFifthFruit
 	j pickFirstFruit
 
 isFirstFruit:
@@ -674,6 +676,15 @@ isFourthFruit:
 	lw $a1, fourthFruitColor
 	j nowDrawFruit	
 	
+isFifthFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, fifthFruitColor
+	j nowDrawFruit		
+	
 nowDrawFruit:	
 	jal DrawPixel
 	j InputCheck
@@ -683,6 +694,7 @@ beq $s5, 1, noSpecialSizeEffect #continues the regular addLength label
 beq $s5, 2, noSpecialSizeEffect #red doesnt affect size so it has the same jump as orange
 beq $s5, 3, purpleEffect #WIP
 beq $s5, 4, yellowEffect #if the fruit was yellow skip adding size
+beq $s5, 5, noSpecialSizeEffect #pink doesnt affect size so it has the same jump as orange
 
 noSpecialSizeEffect:
 	li $s1, 1 #flag to increase snake length
@@ -693,8 +705,8 @@ yellowEffect:
 	#changes fruit after each collision
 	#syscall for random int with a upper bound
 	li $v0, 42
-	#upper bound 3 (0 <= $a0 < $a1)
-	li $a1, 4
+	#upper bound 4 (0 <= $a0 < $a1)
+	li $a1, 5
 	syscall
 
 	addiu $a0, $a0, 1
@@ -911,16 +923,32 @@ beq $s5, 1, fruitOrange
 beq $s5, 2, fruitRed
 beq $s5, 3, fruitPurple
 beq $s5, 4, fruitYellow
+beq $s5, 5, fruitPink
 
-fruitPurple:
+fruitPurple:	#nothing special here, increases size by 10 tho
 	j fruitOrange
 
-fruitRed:
+fruitRed:	#speeds up the user
 	lw $t1, gameSpeed
+	beq $t1, 50, tooFast
 	#subtract 25 from the move speed
 	addiu $t1, $t1, -25
+tooFast: 	#i have found when speed gets to 50 its the fastest that a user can handle
+		# this stops the speed from increasing anymore
 	#store new speed
 	sw $t1, gameSpeed
+	j fruitOrange
+
+fruitPink: 	#slows down the user
+	lw $t1, gameSpeed
+	beq $t1, 200, tooSlow
+	#subtract 25 from the move speed
+	addiu $t1, $t1, +25
+tooSlow: 	#when speed gets to 200, it wont decrease anymore since this is the starter 
+		# speed, anything less might be unbearable
+	#store new speed
+	sw $t1, gameSpeed
+	j fruitOrange
 
 fruitOrange:	
 	#update the score as fruit has been eaten
@@ -942,7 +970,7 @@ fruitOrange:
 	li $a3, 127
 	syscall
 
-fruitYellow:
+fruitYellow:	#doesnt add score, nor increases size
 	lw $t5, score
 	j printScore	
 	
@@ -1078,8 +1106,11 @@ IncreaseDifficulty:
 	sll $t0, $t0, 1 
 	#load the game speed
 	lw $t1, gameSpeed
+	beq $t1, 50, tooFastInDiff #name change here to prevent duplicate jumps
 	#subtract 25 from the move speed
 	addiu $t1, $t1, -25
+tooFastInDiff: 	#i have found when speed gets to 50 its the fastest that a user can handle
+		# this stops the speed from increasing anymore
 	#store new speed
 	sw $t1, gameSpeed
 
