@@ -9,7 +9,13 @@ snakeColor:       .word 0x0066cc   # blue
 whiteColor:       .word 0xFFFFFF   # white
 backgroundColor:  .word 0x000000   # black
 borderColor:      .word 0x00ff00   # green
-fruitColor:       .word 0xcc6611   # orange
+firstFruitColor: .word	0xcc6611	 # orange - base fruit, nothing special
+secondFruitColor:.word	0xff0000	 # red - increases snakes speed, speed will not increase beyond 50
+thirdFruitColor: .word	0x800080	 # purple - adds 10 size 
+fourthFruitColor:.word	0xffff00	 # yellow - does absolutely nothing, no score increase
+					 # no size increase, just a fruit that is meant to waste time
+fifthFruitColor: .word 	0xe4bbf1	 # pink - slows the snake down, will not decrease speed below 200
+
 
 # Score variables
 score:            .word 0
@@ -19,6 +25,12 @@ scoreMilestones:  .word 100, 250, 500, 1000, 5000, 10000
 scoreArrayPosition: .word 0
 lostMessage:      .asciiz "You have died.... Your score was: "
 replayMessage:    .asciiz "Would you like to replay?"
+
+########################################################################
+# ADDED LINES FOR PRINTING REAL-TIME SCORE:
+scoreLabel: .asciiz "Score: "
+newLine:    .asciiz "\n"
+########################################################################
 
 # Snake Information
 snakeHeadX:       .word 31
@@ -479,24 +491,119 @@ DrawTailRight_Label:
     jal  DrawPixel
     j    DrawFruit
 
+######################################################
+# Draw Fruit
+######################################################	
 DrawFruit:
-    lw   $a0, snakeHeadX
-    lw   $a1, snakeHeadY
-    jal  CheckFruitCollision
-    beq  $v0, 1, AddLength
-    lw   $a0, fruitPositionX
-    lw   $a1, fruitPositionY
-    jal  CoordinateToAddress
-    move $a0, $v0
-    lw   $a1, fruitColor
-    jal  DrawPixel
-    j    InputCheck
+	#check collision with fruit
+	lw $a0, snakeHeadX
+	lw $a1, snakeHeadY
+	jal CheckFruitCollision
+	beq $v0, 1, AddLength #if fruit was eaten, add length
+	beq $v0, 0, fruitCheck #jumps over the randomizing the fruit if it has not been eater
+			       # so that it does not change again
 
+pickFirstFruit:
+	#syscall for random int with a upper bound
+	li $v0, 42
+	#upper bound 4 (0 <= $a0 < $a1)
+	li $a1, 5
+	syscall
+
+	addiu $a0, $a0, 1
+	
+	move $s5, $a0
+
+fruitCheck:	
+	beq $s5, 1, isFirstFruit
+	beq $s5, 2, isSecondFruit
+	beq $s5, 3, isThirdFruit
+	beq $s5, 4, isFourthFruit
+	beq $s5, 5, isFifthFruit
+	j pickFirstFruit
+
+isFirstFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, firstFruitColor
+	j nowDrawFruit
+	
+isSecondFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, secondFruitColor
+	j nowDrawFruit
+	
+isThirdFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, thirdFruitColor
+	j nowDrawFruit
+	
+isFourthFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, fourthFruitColor
+	j nowDrawFruit	
+	
+isFifthFruit:
+	#draw the fruit
+	lw $a0, fruitPositionX
+	lw $a1, fruitPositionY
+	jal CoordinateToAddress
+	add $a0, $v0, $zero
+	lw $a1, fifthFruitColor
+	j nowDrawFruit		
+	
+nowDrawFruit:	
+	jal DrawPixel
+	j InputCheck
+	
 AddLength:
-    li   $s1, 1
-    j    SpawnFruit
+beq $s5, 1, noSpecialSizeEffect #continues the regular addLength label
+beq $s5, 2, noSpecialSizeEffect #red doesnt affect size so it has the same jump as orange
+beq $s5, 3, purpleEffect #increases length by 10 instead of 1
+beq $s5, 4, yellowEffect #if the fruit was yellow skip adding size
+beq $s5, 5, noSpecialSizeEffect #pink doesnt affect size so it has the same jump as orange
 
-j InputCheck
+noSpecialSizeEffect:
+	li $s1, 1 #flag to increase snake length
+	j contAddLength
+
+purpleEffect:
+	li $s1, 10 #flag to increase length by 10, instead of 1
+	j contAddLength
+	
+yellowEffect:
+	j contAddLength
+
+contAddLength:
+	#changes fruit after each collision
+	#syscall for random int with a upper bound
+	li $v0, 42
+	#upper bound 4 (0 <= $a0 < $a1)
+	li $a1, 5
+	syscall
+
+	addiu $a0, $a0, 1
+	
+	move $s5, $a0
+	
+	j SpawnFruit
+	
+j InputCheck #shouldn't need, but there in case of errors
 
 ##################################################################
 # CoordinateToAddress Function
@@ -667,36 +774,109 @@ Pause:
 
 ##################################################################
 # Check Fruit Collision
-#  $a0: snakeHead X, $a1: snakeHead Y
-#  Returns $v0: 1 if collision, 0 otherwise.
+# $a0 - snakeHeadPositionX
+# $a1 - snakeHeadPositionY
+##################################################################
+# returns $v0:
+#	0 - does not hit fruit
+#	1 - does hit fruit
+##################################################################
 CheckFruitCollision:
-    lw   $t0, fruitPositionX
-    lw   $t1, fruitPositionY
-    add  $v0, $zero, $zero
-    beq  $a0, $t0, XEqualFruit
-    j    ExitCollisionCheck
+	
+	#get fruit coordinates
+	lw $t0, fruitPositionX
+	lw $t1, fruitPositionY
+	#set $v0 to zero, to default to no collision
+	add $v0, $zero, $zero	
+	#check first to see if x is equal
+	beq $a0, $t0, XEqualFruit
+	#if not equal end function
+	j ExitCollisionCheck
+	
 XEqualFruit:
-    beq  $a1, $t1, YEqualFruit
-    j    ExitCollisionCheck
+	#check to see if the y is equal
+	beq $a1, $t1, YEqualFruit
+	#if not eqaul end function
+	j ExitCollisionCheck
 YEqualFruit:
-    lw   $t5, score
-    lw   $t6, scoreGain
-    add  $t5, $t5, $t6
-    sw   $t5, score
-    li   $v0, 31
-    li   $a0, 79
-    li   $a1, 150
-    li   $a2, 7
-    li   $a3, 127
-    syscall
-    li   $a0, 96
-    li   $a1, 250
-    li   $a2, 7
-    li   $a3, 127
-    syscall
-    li   $v0, 1
+
+beq $s5, 1, fruitOrange
+beq $s5, 2, fruitRed
+beq $s5, 3, fruitPurple
+beq $s5, 4, fruitYellow
+beq $s5, 5, fruitPink
+
+fruitPurple:	#nothing special here, increases size by 10 tho
+	j fruitOrange
+
+fruitRed:	#speeds up the user
+	lw $t1, gameSpeed
+	beq $t1, 50, tooFast
+	#subtract 25 from the move speed
+	addiu $t1, $t1, -25
+tooFast: 	#i have found when speed gets to 50 its the fastest that a user can handle
+		# this stops the speed from increasing anymore
+	#store new speed
+	sw $t1, gameSpeed
+	j fruitOrange
+
+fruitPink: 	#slows down the user
+	lw $t1, gameSpeed
+	beq $t1, 200, tooSlow
+	#subtract 25 from the move speed
+	addiu $t1, $t1, +25
+tooSlow: 	#when speed gets to 200, it wont decrease anymore since this is the starter 
+		# speed, anything less might be unbearable
+	#store new speed
+	sw $t1, gameSpeed
+	j fruitOrange
+
+fruitOrange:	
+	#update the score as fruit has been eaten
+	lw $t5, score
+	lw $t6, scoreGain
+	add $t5, $t5, $t6
+	sw $t5, score
+	# play sound to signify score update
+	li $v0, 31
+	li $a0, 79
+	li $a1, 150
+	li $a2, 7
+	li $a3, 127
+	syscall	
+	
+	li $a0, 96
+	li $a1, 250
+	li $a2, 7
+	li $a3, 127
+	syscall
+
+fruitYellow:	#doesnt add score, nor increases size
+	lw $t5, score
+	j printScore	
+	
+##################################################################
+# ADDED SYSCALLS TO PRINT THE UPDATED SCORE:
+##################################################################
+printScore:
+	li   $v0, 4          # syscall code 4: Print string
+	la   $a0, scoreLabel # address of "Score: " string
+	syscall
+
+	li   $v0, 1          # syscall code 1: Print integer
+	move $a0, $t5        # $t5 holds the updated score
+	syscall
+
+	# optional newline
+	li   $v0, 4
+	la   $a0, newLine
+	syscall
+##################################################################
+	
+	li $v0, 1 #set return value to 1 for collision
+	
 ExitCollisionCheck:
-    jr   $ra
+	jr $ra
 
 ##################################################################
 # Check Snake Body Collision
